@@ -37,35 +37,36 @@ class UncertaintyProcessor(Addon):
         """
         inference = addon_object.inference
 
-        high_entropy_samples = []
+        if len(inference.boxes) > 1:
+            high_entropy_samples = []
 
-        # Calculate the per sample entropy on
-        # (confidence_scores, 1 - confidence_scores)
-        # and keep track of all samples with high entropy
-        for sample in inference.scores:
-            uncertainty = entropy([sample, 1 - sample])
-            if uncertainty >= self._entropy_threshold:
-                high_entropy_samples.append(uncertainty)
+            # Calculate the per sample entropy on
+            # (confidence_scores, 1 - confidence_scores)
+            # and keep track of all samples with high entropy
+            for sample in inference.scores:
+                uncertainty = entropy([sample, 1 - sample])
+                if uncertainty >= self._entropy_threshold:
+                    high_entropy_samples.append(uncertainty)
 
-        # Get the percentage of the high entropy samples
-        percentage_of_uncertainty = len(high_entropy_samples) / \
-                                    len(inference.scores)
-        # Verify if the prediction was uncertain
-        uncertain_prediction = True \
-            if percentage_of_uncertainty >= self._sensitivity_ratio else False
+            # Get the percentage of the high entropy samples
+            percentage_of_uncertainty = len(high_entropy_samples) / \
+                                        len(inference.scores)
+            # Verify if the prediction was uncertain
+            uncertain_prediction = True \
+                if percentage_of_uncertainty >= self._sensitivity_ratio else False
 
-        print(f'Uncertainty percentage {percentage_of_uncertainty:.2f}% '
-              f'Uncertain prediction {uncertain_prediction}')
+            print(f'Uncertainty percentage {percentage_of_uncertainty:.2f}% '
+                  f'Uncertain prediction {uncertain_prediction}')
 
-        uncertainty_metadata_dict = {
-            'uncertain_prediction': uncertain_prediction,
-            'percentage_of_uncertainty': percentage_of_uncertainty,
-            'amount_of_predictions': len(inference.scores),
-            'sensitivity_ratio': self._sensitivity_ratio,
-            'entropy_threshold': self._entropy_threshold
-        }
+            uncertainty_metadata_dict = {
+                'uncertain_prediction': uncertain_prediction,
+                'percentage_of_uncertainty': percentage_of_uncertainty,
+                'amount_of_predictions': len(inference.scores),
+                'sensitivity_ratio': self._sensitivity_ratio,
+                'entropy_threshold': self._entropy_threshold
+            }
 
-        inference.extra['uncertainty'] = uncertainty_metadata_dict
-        addon_object.inference = inference
+            inference.extra['uncertainty'] = uncertainty_metadata_dict
+            addon_object.inference = inference
 
         return addon_object
