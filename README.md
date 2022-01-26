@@ -1,5 +1,22 @@
 # vsdkx-addon-uncertainty
 
+## Input and Output
+
+### `UncertaintyProcessor()`
+
+The `UncertaintyProcessor()` Class requires the following class attributes upon initialization:
+
+- `entropy_threshold` (`float`): It accepts values between 0 - 1, and it defaults to `0.67` as described in section [Uncertainty measurement](#uncertainty-measurement)
+- `sensitivity_ratio` (`float`): It accepts values between 0 - 1, and it can be considered as a percentage of sensitivity. E.g. `0.10` ration would translate to 10% of bounding boxes predicted with a low confidence score.
+
+
+### `post_process()`
+
+The `post_process()` calculates the uncertainty in the frame's predictions, and it receives and returns the following:
+
+- **Input**: (`Dict`) - `addon_object.inference` with main interest on the `list` of `addon_object.inference.scores`
+- **Output**: (`Dict`) - `addon_object` where the uncertainty result is a a `boolean` that is appended to the `addon_object` dictionary as `addon_object.inference.extra['uncertainty']` .
+
 ## Uncertainty measurement
 
 For every detected object, we calculate the `entropy` on two classes (`person`, `not a person`) based on the detected object's confidence score. Since people detection is trained only on one class (`person`), we calculate the `not a person` class by `1 - object's confidence score`. This results to two probabilities per detected object, and one entropy result. Thus, the uncertainty is given by: 
