@@ -1,16 +1,60 @@
-# vsdkx-addon-uncertainty
+# Modeling Uncertainty
+This addon determines how uncertain was the model's detections in this image by calculating the per sample entropy. Given the entropy threshold (e.g. entropy on confidences 0.5 (person) - 0.5 (not a person) = 0.61) we divide the samples on high uncertainty and low uncertainty. We then check if the percentage of samples with high uncertainty exceeds the sensitivity threshold and return True as uncertain prediction, otherwise we consider that the model had high confidence in its predictions and we return False.
 
-## Input and Output
-
-### `UncertaintyProcessor()`
-
-The `UncertaintyProcessor()` Class requires the following class attributes upon initialization:
-
+### Addon Config
+```yaml
+  uncertainty:
+    class: vsdkx.addon.uncertainty.processor.UncertaintyProcessor
+    entropy_threshold: 0.67
+    sensitivity_ratio: 0.10
+```
+where:
 - `entropy_threshold` (`float`): It accepts values between 0 - 1, and it defaults to `0.67` as described in section [Uncertainty measurement](#uncertainty-measurement)
 - `sensitivity_ratio` (`float`): It accepts values between 0 - 1, and it can be considered as a percentage of sensitivity. E.g. `0.10` ration would translate to 10% of bounding boxes predicted with a low confidence score.
 
+## Debug
+Example of object initialization and `post_process`:
+```python
+from vsdkx.addon.uncertainty.processor import UncertaintyProcessor
 
-### `post_process()`
+add_on_config = {
+  'entropy_threshold': 0.67, 
+  'sensitivity_ratio': 0.1, 
+  'class': 'vsdkx.addon.uncertainty.processor.UncertaintyProcessor'
+  }
+model_config = {
+    'classes_len': 1, 
+    'filter_class_ids': [0], 
+    'input_shape': [640, 640], 
+    'model_path': 'vsdkx/weights/ppl_detection_retrain_training_2.pt'
+    }
+    
+model_settings = {
+    'conf_thresh': 0.5, 
+    'device': 'cpu', 
+    'iou_thresh': 0.4
+    }  
+  
+uncertainty = UncertaintyProcessor(addon_on_config, model_settings, model_config)
+
+addon_object = AddonObject(
+    frame=np.array(), dtype=uint8), 
+    inference=Inference(
+        boxes=[array([2007,  608, 3322, 2140]), array([ 348,  348, 2190, 2145])], 
+        classes=[array([0], dtype=object), array([0], dtype=object)], 
+        scores=[array([0.799637496471405], dtype=object), array([0.6711544394493103], dtype=object)], 
+        extra={
+          'tracked_objects': 0, 
+          'zoning': {'zone_0': {'Person': [], 'Person_count': 0, 'objects_entered': {'Person': [], 'Person_count': 0},
+          'objects_exited': {'Person': [], 'Person_count': 0}}, 'rest': {'Person': [], 'Person_count': 0}}, 
+          'current_speed': {}, 
+          'current_action': {}}), 
+    shared={
+      'trackable_objects': {}, 
+      'trackable_objects_history': {0: {'object_id': 0}, 1: {'object_id': 1}}})
+
+addon_object = uncertainty.post_process(addon_object)
+```
 
 The `post_process()` calculates the uncertainty in the frame's predictions, and it receives and returns the following:
 
